@@ -10,6 +10,7 @@ const NavbarMenu = ({
   navigation,
   textColor,
   homeScreen,
+  handleShareList,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -64,11 +65,20 @@ const NavbarMenu = ({
                   Edit List
                 </Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleShareList}
+                style={styles.menuItem}
+              >
+                <EvilIcons name="share-google" size={24} color="#3498db" />
+                <Text style={[styles.menuItemText, { color: "#858585" }]}>
+                  Share
+                </Text>
+              </TouchableOpacity>
             </>
           ) : (
             <>
               <TouchableOpacity
-                onPress={navigation.navigate("Calendar", { navigation })}
+                onPress={() => navigation.navigate("Calendar")}
                 style={styles.menuItem}
               >
                 <EvilIcons name="calendar" size={24} color="#3498db" />
@@ -77,7 +87,7 @@ const NavbarMenu = ({
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={handleEditCategory}
+                onPress={() => navigation.navigate("Dashboard")}
                 style={styles.menuItem}
               >
                 <EvilIcons name="chart" size={24} color="#3498db" />

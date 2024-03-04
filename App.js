@@ -7,6 +7,7 @@ import TaskDetails from "./components/TaskDetails";
 import AddTaskScreen from "./components/AddTaskScreen";
 import TaskList from "./components/TaskList";
 import CalendarIntegration from "./components/CalendarIntegration";
+import Dashboard from "./components/Dashboard";
 
 const Stack = createStackNavigator();
 
@@ -19,6 +20,7 @@ const App = () => {
         <Stack.Screen name="TaskDetails" component={TaskDetails} />
         <Stack.Screen name="Add Task" component={AddTaskScreen} />
         <Stack.Screen name="Calendar" component={CalendarIntegration} />
+        <Stack.Screen name="Dashboard" component={Dashboard} />
       </Stack.Navigator>
     </NavigationContainer>
   );

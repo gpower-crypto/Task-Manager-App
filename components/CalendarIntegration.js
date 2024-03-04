@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Calendar as RNCalendar } from "react-native-calendars";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as ExpoCalendar from "expo-calendar"; // Rename the imported object here
+import * as ExpoCalendar from "expo-calendar";
 
 const CalendarIntegration = ({ navigation }) => {
   const [tasks, setTasks] = useState([]);
@@ -72,30 +72,86 @@ const CalendarIntegration = ({ navigation }) => {
     console.log(`Event created: ${eventId}`);
   };
 
+  const handleDayPress = (day) => {
+    // Handle day press event
+    // Fetch and display tasks for the selected day
+    const selectedDate = day.dateString;
+
+    // Find tasks for the selected date
+    const tasksForDate = tasks.filter(
+      (task) => task.dueDate && task.dueDate.split("T")[0] === selectedDate
+    );
+
+    // Navigate to the TaskDetails page for the selected date's tasks
+    if (tasksForDate.length > 0) {
+      const firstTask = tasksForDate[0]; // Assuming you want to navigate to the details of the first task
+      navigation.navigate("TaskDetails", {
+        item: firstTask,
+        categoryId: firstTask.categoryId, // Make sure to have categoryId in your task object
+        backgroundColor: firstTask.categoryColor, // Use the appropriate property from your task object
+        textColor: firstTask.categoryTextColor, // Use the appropriate property from your task object
+      });
+    } else {
+      // If no tasks are found, you can handle this case or show a message
+      console.log("No tasks found for the selected date");
+    }
+  };
+
   return (
-    <View>
+    <View style={styles.container}>
       <RNCalendar
         markedDates={markDueDatesOnCalendar()}
-        onDayPress={(day) => {
-          // Handle day press event
-          // Fetch and display tasks for the selected day
+        onDayPress={handleDayPress}
+        theme={{
+          calendarBackground: "#f2f2f2",
+          textSectionTitleColor: "#3498db",
+          todayTextColor: "#3498db",
+          dayTextColor: "#2d4150",
+          arrowColor: "#3498db",
+          selectedDayBackgroundColor: "#3498db",
+          selectedDayTextColor: "#ffffff",
+          textDayFontWeight: "bold",
         }}
       />
       <TouchableOpacity
-        onPress={() => navigation.navigate("Add Task")}
-        style={{
-          padding: 20,
-          backgroundColor: "#3498db",
-          marginTop: 20,
-          borderRadius: 8,
-        }}
+        onPress={() =>
+          navigation.navigate("Add Task", {
+            category: {
+              color: "#38419D",
+              textColor: "#fff",
+            },
+          })
+        }
+        style={styles.addTaskButton}
       >
-        <Text style={{ color: "#fff" }}>Add Task</Text>
+        <Text style={styles.addTaskButtonText}>Add Task</Text>
       </TouchableOpacity>
-      <Text>Your Task List</Text>
-      {/* Display your tasks here */}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 10,
+    backgroundColor: "#fff",
+  },
+  addTaskButton: {
+    marginTop: 20,
+    padding: 20,
+    backgroundColor: "#38419D",
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  addTaskButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  taskListTitle: {
+    marginTop: 20,
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+});
 
 export default CalendarIntegration;

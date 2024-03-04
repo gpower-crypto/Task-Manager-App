@@ -17,6 +17,8 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import NavbarMenu from "./NavbarMenu";
 import Color from "color";
 import { RadioButton } from "react-native-paper";
+import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system";
 
 const TaskList = ({ onDeleteCategory }) => {
   const navigation = useNavigation();
@@ -52,18 +54,35 @@ const TaskList = ({ onDeleteCategory }) => {
     setDeleteConfirmationVisible(false);
   };
 
-  // const filteredTasks = tasks
-  //   .filter((task) =>
-  //     task.title.toLowerCase().includes(searchQuery.toLowerCase())
-  //   )
-  //   .filter((task) => {
-  //     const statusFilter =
-  //       selectedStatus === "all" ||
-  //       (selectedStatus === "completed" && task.completed) ||
-  //       (selectedStatus === "incomplete" && !task.completed);
+  const createTempFile = async () => {
+    const tasksText = tasks
+      .map(
+        (task) =>
+          `Title: ${task.title}\nDescription: ${task.description}\nDue Date: ${task.dueDate}`
+      )
+      .join("\n\n");
 
-  //     return statusFilter && (!name || task.category === name);
-  //   });
+    const tempDirectory = `${FileSystem.cacheDirectory}tasks`;
+    const tempFileUri = `${tempDirectory}/tasks.txt`;
+
+    await FileSystem.makeDirectoryAsync(tempDirectory, { intermediates: true });
+    await FileSystem.writeAsStringAsync(tempFileUri, tasksText);
+
+    return tempFileUri;
+  };
+
+  const shareTasks = async () => {
+    try {
+      const tempFileUri = await createTempFile();
+
+      await Sharing.shareAsync(tempFileUri, {
+        mimeType: "text/plain",
+        dialogTitle: "Share Your Tasks",
+      });
+    } catch (error) {
+      console.error("Error sharing tasks:", error);
+    }
+  };
 
   const navigateToAddTask = () => {
     navigation.navigate("Add Task", {
@@ -117,7 +136,13 @@ const TaskList = ({ onDeleteCategory }) => {
     try {
       const tasksString = await AsyncStorage.getItem("tasks");
       const storedTasks = tasksString ? JSON.parse(tasksString) : [];
-      setTasks(storedTasks);
+
+      // Filter tasks based on the specified category name
+      const filteredTasks = name
+        ? storedTasks.filter((task) => task.category === name)
+        : storedTasks;
+
+      setTasks(filteredTasks);
     } catch (error) {
       console.error("Error retrieving tasks from AsyncStorage:", error);
     }
@@ -143,6 +168,7 @@ const TaskList = ({ onDeleteCategory }) => {
           onDeleteCategory={() => setCategoryToDelete(name)}
           onOpenDeleteConfirmation={openDeleteConfirmation}
           textColor={textColor}
+          handleShareList={shareTasks}
         />
       ),
     });
