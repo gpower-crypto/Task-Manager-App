@@ -6,6 +6,7 @@ import Home from "./components/HomeScreen";
 import TaskDetails from "./components/TaskDetails";
 import AddTaskScreen from "./components/AddTaskScreen";
 import TaskList from "./components/TaskList";
+import CalendarIntegration from "./components/CalendarIntegration";
 
 const Stack = createStackNavigator();
 
@@ -16,7 +17,8 @@ const App = () => {
         <Stack.Screen name="Home" component={Home} />
         <Stack.Screen name="TaskList" component={TaskList} />
         <Stack.Screen name="TaskDetails" component={TaskDetails} />
-        <Stack.Screen name="AddTask" component={AddTaskScreen} />
+        <Stack.Screen name="Add Task" component={AddTaskScreen} />
+        <Stack.Screen name="Calendar" component={CalendarIntegration} />
       </Stack.Navigator>
     </NavigationContainer>
   );

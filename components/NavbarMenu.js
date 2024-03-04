@@ -2,12 +2,24 @@
 import React, { useState } from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { EvilIcons } from "@expo/vector-icons";
+import CategoryModal from "./CategoryModal";
 
-const NavbarMenu = ({ onOpenDeleteConfirmation }) => {
+const NavbarMenu = ({
+  onOpenDeleteConfirmation,
+  category,
+  navigation,
+  textColor,
+  homeScreen,
+}) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const toggleMenu = () => {
     setShowMenu(!showMenu);
+  };
+
+  const toggleEditModal = () => {
+    setShowEditModal(!showEditModal);
   };
 
   const handleDeleteCategory = () => {
@@ -15,23 +27,77 @@ const NavbarMenu = ({ onOpenDeleteConfirmation }) => {
     onOpenDeleteConfirmation();
   };
 
+  const handleEditCategory = () => {
+    toggleMenu();
+    toggleEditModal();
+  };
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={toggleMenu}>
+      <TouchableOpacity onPress={toggleMenu} style={styles.menuIcon}>
         <EvilIcons
           name={showMenu ? "close" : "navicon"}
           size={30}
-          color="white"
+          color={textColor}
         />
       </TouchableOpacity>
 
       {showMenu && (
         <View style={styles.menu}>
-          <TouchableOpacity onPress={handleDeleteCategory}>
-            <Text style={styles.menuItem}>Delete Category</Text>
-          </TouchableOpacity>
+          {!homeScreen ? (
+            <>
+              <TouchableOpacity
+                onPress={handleDeleteCategory}
+                style={styles.menuItem}
+              >
+                <EvilIcons name="trash" size={24} color="#e74c3c" />
+                <Text style={[styles.menuItemText, { color: "#e74c3c" }]}>
+                  Delete List
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleEditCategory}
+                style={styles.menuItem}
+              >
+                <EvilIcons name="pencil" size={24} color="#3498db" />
+                <Text style={[styles.menuItemText, { color: "#3498db" }]}>
+                  Edit List
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                onPress={navigation.navigate("Calendar", { navigation })}
+                style={styles.menuItem}
+              >
+                <EvilIcons name="calendar" size={24} color="#3498db" />
+                <Text style={[styles.menuItemText, { color: "black" }]}>
+                  View Calendar
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleEditCategory}
+                style={styles.menuItem}
+              >
+                <EvilIcons name="chart" size={24} color="#3498db" />
+                <Text style={[styles.menuItemText, { color: "black" }]}>
+                  Dashboard
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       )}
+
+      <CategoryModal
+        visible={showEditModal}
+        onClose={toggleEditModal}
+        categoryData={category}
+        onUpdate={(category) => {
+          navigation.navigate("TaskList", { category });
+        }}
+      />
     </View>
   );
 };
@@ -39,28 +105,44 @@ const NavbarMenu = ({ onOpenDeleteConfirmation }) => {
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    top: 10,
+    top: 9,
     right: 10,
     flexDirection: "row",
     alignItems: "center",
+    borderRadius: 10,
+    zIndex: 1,
+  },
+  menuIcon: {
     padding: 8,
-    backgroundColor: "blue",
-    borderRadius: 5,
-    elevation: 5,
+    borderRadius: 10,
   },
   menu: {
     position: "absolute",
-    top: 90,
+    top: 70,
     right: 10,
-    backgroundColor: "white",
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: "#fff",
+    borderRadius: 12,
     elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   menuItem: {
-    color: "black",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  menuItemText: {
     fontWeight: "bold",
-    marginBottom: 8,
+    fontSize: 16,
+    marginLeft: 16,
   },
 });
 

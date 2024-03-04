@@ -1,27 +1,38 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-} from "react-native";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { Ionicons, FontAwesome } from "@expo/vector-icons";
+import CategoryModal from "./CategoryModal";
 
 const TaskCategories = () => {
   const navigation = useNavigation();
   const [categories, setCategories] = useState([]);
-  const [categoryInput, setCategoryInput] = useState("");
   const [addCategoryModalVisible, setAddCategoryModalVisible] = useState(false);
+  const [editCategoryData, setEditCategoryData] = useState(null);
 
   const fetchCategories = async () => {
     try {
       const categoriesString = await AsyncStorage.getItem("categories");
-      const storedCategories = categoriesString
+      let storedCategories = categoriesString
         ? JSON.parse(categoriesString)
         : [];
+
+      // Fetch tasks for each category and update the tasks count
+      storedCategories = await Promise.all(
+        storedCategories.map(async (category) => {
+          const tasksString = await AsyncStorage.getItem("tasks");
+          const storedTasks = tasksString ? JSON.parse(tasksString) : [];
+
+          const categoryTasks = storedTasks.filter(
+            (task) => task.category === category.name
+          );
+
+          category.tasks = categoryTasks.length;
+          return category;
+        })
+      );
+
       setCategories(storedCategories);
     } catch (error) {
       console.error("Error retrieving categories from AsyncStorage:", error);
@@ -38,76 +49,58 @@ const TaskCategories = () => {
     }, [])
   );
 
-  const addCategory = async () => {
-    if (categoryInput.trim() === "") {
-      return;
-    }
+  const handleSaveCategory = () => {
+    fetchCategories(); // Fetch categories after saving or editing a category
+  };
 
-    const newCategory = {
-      id: Date.now().toString(),
-      name: categoryInput,
-    };
-
-    try {
-      const updatedCategories = [...categories, newCategory];
-      await AsyncStorage.setItem(
-        "categories",
-        JSON.stringify(updatedCategories)
-      );
-
-      setCategories(updatedCategories);
-      setCategoryInput("");
-      setAddCategoryModalVisible(false);
-    } catch (error) {
-      console.error("Error adding category to AsyncStorage:", error);
-    }
+  const handleAddCategory = () => {
+    setEditCategoryData(null);
+    setAddCategoryModalVisible(true);
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerText}>Task Categories</Text>
+      <Text style={styles.headerText}>Tasks</Text>
 
       {categories.map((category) => (
         <TouchableOpacity
           key={category.id}
-          style={styles.categoryItem}
-          onPress={() =>
-            navigation.navigate("TaskList", { category: category })
-          }
+          style={[styles.categoryItem, { borderColor: category.color }]}
+          onPress={() => navigation.navigate("TaskList", { category })}
         >
-          <Text>{category.name}</Text>
+          <View style={styles.categoryInfo}>
+            <View style={styles.categoryHeader}>
+              <Text style={styles.categoryName}>{category.name}</Text>
+              <FontAwesome
+                name="smile-o"
+                size={20}
+                color={category.color}
+                style={styles.colorIcon}
+              />
+            </View>
+            <Text style={styles.categoryTaskCount}>
+              {category.tasks ? `${category.tasks} tasks` : "No tasks"}
+            </Text>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color="#555"
+            onPress={() => navigation.navigate("TaskList", { category })}
+          />
         </TouchableOpacity>
       ))}
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => setAddCategoryModalVisible(true)}
-      >
-        <Text style={styles.buttonText}>Add Category</Text>
+      <TouchableOpacity style={styles.addButton} onPress={handleAddCategory}>
+        <Ionicons name="add" size={30} color="#fff" />
       </TouchableOpacity>
 
       {/* Add Category Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
+      <CategoryModal
         visible={addCategoryModalVisible}
-        onRequestClose={() => setAddCategoryModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Category</Text>
-            <TextInput
-              style={styles.categoryInput}
-              placeholder="Category Name"
-              value={categoryInput}
-              onChangeText={(text) => setCategoryInput(text)}
-            />
-            <TouchableOpacity style={styles.addButton} onPress={addCategory}>
-              <Text style={styles.buttonText}>Add Category</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setAddCategoryModalVisible(false)}
+        onSave={handleSaveCategory}
+      />
     </View>
   );
 };
@@ -116,26 +109,56 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: "#f5f5f5",
   },
   headerText: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 16,
+    marginBottom: 26,
+    marginTop: 9,
+    color: "#333",
   },
   categoryItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: "#fff",
+    elevation: 3,
+  },
+  categoryInfo: {
+    flex: 1,
+  },
+  categoryName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  categoryTaskCount: {
+    fontSize: 14,
+    color: "#555",
   },
   addButton: {
-    backgroundColor: "green",
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: "#38419D",
+    padding: 13,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  addButtonModal: {
+    backgroundColor: "#3498db",
+    padding: 12,
+    borderRadius: 12,
     alignItems: "center",
     marginTop: 16,
   },
   buttonText: {
     color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   // Add Category Modal Styles
   modalContainer: {
@@ -147,22 +170,34 @@ const styles = StyleSheet.create({
   modalContent: {
     width: 300,
     padding: 20,
-    borderRadius: 8,
+    borderRadius: 12,
     elevation: 5,
     backgroundColor: "#fff",
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     marginBottom: 10,
+    color: "#333",
   },
   categoryInput: {
     height: 40,
-    borderColor: "gray",
+    borderColor: "#ccc",
     borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 16,
+    borderRadius: 12,
+    marginBottom: 6,
     paddingHorizontal: 8,
+  },
+  colorPicker: {
+    width: "100%",
+    marginBottom: 290,
+  },
+  categoryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  colorIcon: {
+    marginLeft: 8,
   },
 });
 

@@ -1,16 +1,17 @@
-// AddTaskScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
   TextInput,
-  Button,
-  StyleSheet,
   TouchableOpacity,
+  StyleSheet,
   Text,
+  Image,
+  FlatList,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker"; // Import Expo Image Picker
 
 const AddTaskScreen = () => {
   const [taskTitle, setTaskTitle] = useState("");
@@ -18,18 +19,27 @@ const AddTaskScreen = () => {
   const [dueDate, setDueDate] = useState(new Date());
   const [priority, setPriority] = useState("none");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
 
   const navigation = useNavigation();
   const route = useRoute();
   const { taskToEdit } = route.params || {};
+  const { name, id, color, textColor } = route.params?.category || {};
 
   useEffect(() => {
     if (taskToEdit) {
-      const { title, description, dueDate: dueDateStr, priority } = taskToEdit;
+      const {
+        title,
+        description,
+        dueDate: dueDateStr,
+        priority,
+        image,
+      } = taskToEdit;
       setTaskTitle(title || "");
       setTaskDescription(description || "");
       setDueDate(new Date(dueDateStr || new Date()));
       setPriority(priority || "medium");
+      setSelectedImages(image || []);
     }
   }, [taskToEdit]);
 
@@ -56,6 +66,29 @@ const AddTaskScreen = () => {
     }
   };
 
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+        multiple: true, // Allow multiple image selection
+      });
+
+      if (!result.canceled) {
+        // Update the state with the selected images
+        setSelectedImages(result.assets);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+    }
+  };
+
+  useEffect(() => {
+    updateScreenNavbar();
+  });
+
   const onChange = (event, selectedDate) => {
     const currentDate = selectedDate || dueDate;
     setShowDatePicker(false);
@@ -79,12 +112,33 @@ const AddTaskScreen = () => {
       dueDate: dueDate.toISOString(),
       completed: taskToEdit?.completed || false,
       priority,
-      category: route.params?.category?.name,
+      category: name,
+      image: selectedImages.map((image) => image.uri),
     };
 
     onAddTask(newTask);
 
     navigation.navigate("TaskList", { category: route.params?.category });
+  };
+
+  const updateScreenNavbar = () => {
+    navigation.setOptions({
+      title: taskToEdit && "Edit Task",
+      headerStyle: {
+        backgroundColor: color, // Updated header color
+      },
+      headerTintColor: textColor,
+    });
+  };
+
+  const renderSelectedImages = () => {
+    return selectedImages.map((image, index) => (
+      <Image
+        key={index}
+        source={{ uri: image.uri || image }}
+        style={styles.selectedImage}
+      />
+    ));
   };
 
   return (
@@ -101,54 +155,19 @@ const AddTaskScreen = () => {
         value={taskDescription}
         onChangeText={(text) => setTaskDescription(text)}
       />
-      <View style={styles.priorityContainer}>
-        <Text>Priority:</Text>
-        <View style={styles.radioGroup}>
-          <TouchableOpacity
-            onPress={() => setPriority("high")}
-            style={[
-              styles.radioButton,
-              { backgroundColor: priority === "high" ? "#FF5733" : "white" },
-            ]}
-          >
-            <Text>High</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setPriority("medium")}
-            style={[
-              styles.radioButton,
-              {
-                backgroundColor: priority === "medium" ? "#EB9847" : "white",
-              },
-            ]}
-          >
-            <Text>Medium</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setPriority("low")}
-            style={[
-              styles.radioButton,
-              { backgroundColor: priority === "low" ? "#72D032" : "white" },
-            ]}
-          >
-            <Text>Low</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setPriority("none")}
-            style={[
-              styles.radioButton,
-              { backgroundColor: priority === "none" ? "#D8DED4" : "white" },
-            ]}
-          >
-            <Text>None</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <TouchableOpacity onPress={pickImage} style={styles.imagePickerButton}>
+        <Text style={styles.imagePickerButtonText}>Add Image</Text>
+      </TouchableOpacity>
+
+      {renderSelectedImages()}
+
       <TouchableOpacity
         onPress={showDatePickerModal}
         style={styles.datePickerButton}
       >
-        <Text>{`Due Date: ${dueDate.toDateString()}`}</Text>
+        <Text
+          style={styles.datePickerButtonText}
+        >{`Due Date: ${dueDate.toDateString()}`}</Text>
       </TouchableOpacity>
       {showDatePicker && (
         <DateTimePicker
@@ -160,10 +179,70 @@ const AddTaskScreen = () => {
           onChange={onChange}
         />
       )}
-      <Button
-        title={!taskToEdit ? "Add Task" : "Update Task"}
+      <View style={styles.priorityContainer}>
+        <Text style={styles.priorityLabel}>Priority:</Text>
+        <View style={styles.radioGroup}>
+          <TouchableOpacity
+            onPress={() => setPriority("high")}
+            style={[
+              styles.radioButton,
+              { backgroundColor: priority === "high" ? "#FF5733" : "white" },
+            ]}
+          >
+            <Text style={styles.radioText}>High</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setPriority("medium")}
+            style={[
+              styles.radioButton,
+              {
+                backgroundColor: priority === "medium" ? "#EB9847" : "white",
+              },
+            ]}
+          >
+            <Text style={styles.radioText}>Medium</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setPriority("low")}
+            style={[
+              styles.radioButton,
+              { backgroundColor: priority === "low" ? "#72D032" : "white" },
+            ]}
+          >
+            <Text style={styles.radioText}>Low</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setPriority("none")}
+            style={[
+              styles.radioButton,
+              { backgroundColor: priority === "none" ? "#D8DED4" : "white" },
+            ]}
+          >
+            <Text style={styles.radioText}>None</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      <TouchableOpacity
         onPress={addTask}
-      />
+        style={[
+          styles.addButton,
+          {
+            backgroundColor: color,
+            color: textColor,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.buttonText,
+            {
+              color: textColor,
+            },
+          ]}
+        >
+          {!taskToEdit ? "Add Task" : "Update Task"}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -171,25 +250,36 @@ const AddTaskScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 20,
+    backgroundColor: "#f5f5f5",
   },
   input: {
-    marginVertical: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    marginBottom: 15,
+    padding: 15,
+    borderColor: "#ccc",
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   datePickerButton: {
-    marginVertical: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    marginBottom: 15,
+    padding: 15,
+    borderColor: "#ccc",
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
+    backgroundColor: "#ecf0f1",
+  },
+  datePickerButtonText: {
+    fontSize: 16,
   },
   priorityContainer: {
-    marginVertical: 8,
+    marginBottom: 15,
+  },
+  priorityLabel: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#333",
   },
   radioGroup: {
     flexDirection: "row",
@@ -197,11 +287,44 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   radioButton: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
+    padding: 12,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
+    marginHorizontal: 2,
+  },
+  radioText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  addButton: {
+    marginTop: 20,
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    backgroundColor: "#3498db",
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  imagePickerButton: {
+    marginBottom: 15,
+    padding: 15,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 10,
+    alignItems: "center",
+    backgroundColor: "#ecf0f1",
+  },
+  imagePickerButtonText: {
+    fontSize: 16,
+  },
+  selectedImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    marginTop: 10,
+    marginBottom: 20,
   },
 });
 

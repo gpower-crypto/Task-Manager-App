@@ -7,6 +7,7 @@ import {
   TextInput,
   Modal,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Task from "./Task";
@@ -14,24 +15,34 @@ import { Ionicons } from "@expo/vector-icons";
 import DropDownPicker from "react-native-dropdown-picker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import NavbarMenu from "./NavbarMenu";
+import Color from "color";
+import { RadioButton } from "react-native-paper";
 
 const TaskList = ({ onDeleteCategory }) => {
   const navigation = useNavigation();
-  const route = useRoute(); // Get the route
+  const route = useRoute();
 
   const [tasks, setTasks] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [openStatus, setOpenStatus] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("all");
-  const [openPriority, setOpenPriority] = useState(false);
-  const [selectedPriority, setSelectedPriority] = useState("all");
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
-
-  const { name, id } = route.params?.category;
+  const [selectedSort, setSelectedSort] = useState("None");
+  const [openSort, setOpenSort] = useState(false);
+  const [filteredTasks, setFilteredTasks] = useState(tasks);
+  const { name, id, color } = route.params?.category;
 
   const [isDeleteConfirmationVisible, setDeleteConfirmationVisible] =
     useState(false);
+
+  const isLightColor = (hexColor) => {
+    const colorInstance = Color(hexColor);
+    const luminance = colorInstance.luminosity();
+    return luminance > 0.5; // Adjust this threshold as needed
+  };
+  const [textColor, setTextColor] = useState(
+    isLightColor(color) ? "black" : "white"
+  );
 
   const openDeleteConfirmation = () => {
     setDeleteConfirmationVisible(true);
@@ -41,70 +52,61 @@ const TaskList = ({ onDeleteCategory }) => {
     setDeleteConfirmationVisible(false);
   };
 
-  const filteredTasks = tasks
-    .filter((task) =>
-      task.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .filter((task) => {
-      const statusFilter =
-        selectedStatus === "all" ||
-        (selectedStatus === "completed" && task.completed) ||
-        (selectedStatus === "incomplete" && !task.completed);
+  // const filteredTasks = tasks
+  //   .filter((task) =>
+  //     task.title.toLowerCase().includes(searchQuery.toLowerCase())
+  //   )
+  //   .filter((task) => {
+  //     const statusFilter =
+  //       selectedStatus === "all" ||
+  //       (selectedStatus === "completed" && task.completed) ||
+  //       (selectedStatus === "incomplete" && !task.completed);
 
-      const priorityFilter =
-        selectedPriority === "all" ||
-        (selectedPriority !== "none" && task.priority === selectedPriority) ||
-        (selectedPriority === "none" &&
-          (!task.priority || task.priority === "none"));
-
-      return (
-        statusFilter && priorityFilter && (!name || task.category === name)
-      );
-    });
+  //     return statusFilter && (!name || task.category === name);
+  //   });
 
   const navigateToAddTask = () => {
-    navigation.navigate("AddTask", { category: { name, id } });
+    navigation.navigate("Add Task", {
+      category: {
+        name,
+        id,
+        color,
+        textColor: textColor,
+      },
+    });
   };
 
   const confirmDeleteCategory = async () => {
     try {
       console.log(`Deleting category ${name} and its tasks...`);
 
-      // Get existing tasks from AsyncStorage
       const existingTasksString = await AsyncStorage.getItem("tasks");
       const existingTasks = existingTasksString
         ? JSON.parse(existingTasksString)
         : [];
 
-      // Filter out tasks with the specified category ID
       const updatedTasks = existingTasks.filter(
         (task) => task.category !== name
       );
 
-      // Update AsyncStorage with the filtered tasks
       await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
 
-      // Remove the category from AsyncStorage or wherever it's stored
       const existingCategoriesString = await AsyncStorage.getItem("categories");
       const existingCategories = existingCategoriesString
         ? JSON.parse(existingCategoriesString)
         : [];
 
-      // Filter out the category to be deleted
       const updatedCategories = existingCategories.filter(
         (cat) => cat.id !== id
       );
 
-      // Update AsyncStorage with the filtered categories
       await AsyncStorage.setItem(
         "categories",
         JSON.stringify(updatedCategories)
       );
 
-      // Clear the categoryToDelete after deletion
       setCategoryToDelete(null);
 
-      // Navigate back to the Home screen or any other appropriate action
       navigation.navigate("Home");
     } catch (error) {
       console.error("Error deleting category:", error);
@@ -124,20 +126,23 @@ const TaskList = ({ onDeleteCategory }) => {
   useEffect(() => {
     fetchTasks();
     updateScreenNavbar();
+    setTextColor(isLightColor(color) ? "black" : "white");
   }, [tasks, name]);
 
   const updateScreenNavbar = () => {
     navigation.setOptions({
       title: name || "Task Categories",
       headerStyle: {
-        backgroundColor: "blue",
+        backgroundColor: color, // Updated header color
       },
-      headerTintColor: "white",
+      headerTintColor: textColor,
       headerRight: () => (
         <NavbarMenu
+          category={route.params?.category}
           navigation={navigation}
           onDeleteCategory={() => setCategoryToDelete(name)}
           onOpenDeleteConfirmation={openDeleteConfirmation}
+          textColor={textColor}
         />
       ),
     });
@@ -152,6 +157,39 @@ const TaskList = ({ onDeleteCategory }) => {
   };
 
   const applyFilter = () => {
+    // Filtering logic based on selectedStatus
+    const filteredTasksByStatus = tasks.filter((task) => {
+      const statusFilter =
+        selectedStatus === "all" ||
+        (selectedStatus === "completed" && task.completed) ||
+        (selectedStatus === "incomplete" && !task.completed);
+
+      return statusFilter && (!name || task.category === name);
+    });
+
+    // Sorting logic based on selectedSort
+    let sortedTasks = [...filteredTasksByStatus];
+
+    if (selectedSort === "dueDate") {
+      sortedTasks.sort((a, b) => {
+        const dateA = new Date(a.dueDate);
+        const dateB = new Date(b.dueDate);
+        return dateA - dateB;
+      });
+    } else if (selectedSort === "priority") {
+      sortedTasks.sort((a, b) => {
+        const priorityOrder = {
+          none: 0,
+          low: 1,
+          medium: 2,
+          high: 3,
+        };
+        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      });
+    }
+
+    // Set the filtered and sorted tasks
+    setFilteredTasks(sortedTasks);
     closeFilterModal();
   };
 
@@ -173,36 +211,44 @@ const TaskList = ({ onDeleteCategory }) => {
   };
 
   const navigateToDetails = (item) => {
-    navigation.navigate("TaskDetails", { item, categoryId: id });
+    navigation.navigate("TaskDetails", {
+      item,
+      categoryId: id,
+      backgroundColor: color,
+      textColor: textColor,
+    });
   };
 
   const clearFilters = () => {
     setSelectedStatus("all");
-    setSelectedPriority("all");
-    setOpenStatus(false);
-    setOpenPriority(false);
+    setSelectedSort("all");
+    setOpenSort(false);
     closeFilterModal();
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: color }]}>
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: textColor }]}
           placeholder="Search tasks..."
+          placeholderTextColor={
+            isLightColor(color) ? "black" : "rgba(255, 255, 255, 0.5)"
+          }
           value={searchQuery}
           onChangeText={(text) => setSearchQuery(text)}
         />
         <TouchableOpacity onPress={openFilterModal}>
-          <Ionicons name="filter" size={24} color="black" />
+          <Ionicons name="filter" size={24} color="#333" />
         </TouchableOpacity>
       </View>
 
-      {filteredTasks.length === 0 ? (
-        <Text>No tasks</Text>
+      {tasks.length === 0 ||
+      (filteredTasks.length === 0 && tasks.length === 0) ? (
+        <Text style={styles.noTasksText}>No tasks</Text>
       ) : (
         <FlatList
-          data={filteredTasks}
+          data={filteredTasks.length === 0 ? tasks : filteredTasks}
           keyExtractor={(task) => task.id.toString()}
           renderItem={({ item }) => (
             <Task
@@ -214,8 +260,13 @@ const TaskList = ({ onDeleteCategory }) => {
         />
       )}
 
-      <TouchableOpacity style={styles.addButton} onPress={navigateToAddTask}>
-        <Text style={styles.addButtonText}>Add Task</Text>
+      <TouchableOpacity
+        style={[styles.addButton, { backgroundColor: color }]}
+        onPress={navigateToAddTask}
+      >
+        <Text style={[styles.addButtonText, { color: textColor }]}>
+          Add Task
+        </Text>
       </TouchableOpacity>
 
       {/* Filter Modal */}
@@ -227,39 +278,55 @@ const TaskList = ({ onDeleteCategory }) => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Filter Tasks</Text>
-
             {/* Status Dropdown */}
-            <DropDownPicker
-              open={openStatus}
-              value={selectedStatus}
-              items={[
-                { label: "All", value: "all" },
-                { label: "Completed", value: "completed" },
-                { label: "Incomplete", value: "incomplete" },
-              ]}
-              setOpen={setOpenStatus}
-              setValue={setSelectedStatus}
-              setItems={() => {}}
-              style={[styles.dropdown, { zIndex: 100 }]}
-            />
+            <View style={styles.dropdownContainer}>
+              <Text style={styles.dropdownLabel}>VIEW</Text>
+              <ScrollView>
+                <RadioButton.Group
+                  onValueChange={(value) => setSelectedStatus(value)}
+                  value={selectedStatus}
+                >
+                  <View style={styles.radioButtonContainer}>
+                    <RadioButton.Item
+                      label="All"
+                      value="all"
+                      color="#3498db"
+                      style={styles.radioButton}
+                    />
+                    <RadioButton.Item
+                      label="Completed Tasks"
+                      value="completed"
+                      color="#3498db"
+                      style={styles.radioButton}
+                    />
+                    <RadioButton.Item
+                      label="Incomplete Tasks"
+                      value="incomplete"
+                      color="#3498db"
+                      style={styles.radioButton}
+                    />
+                  </View>
+                </RadioButton.Group>
+              </ScrollView>
+            </View>
 
-            {/* Priority Dropdown */}
-            <DropDownPicker
-              open={openPriority}
-              value={selectedPriority}
-              items={[
-                { label: "All", value: "all" },
-                { label: "High", value: "high" },
-                { label: "Medium", value: "medium" },
-                { label: "Low", value: "low" },
-                { label: "None", value: "none" },
-              ]}
-              setOpen={setOpenPriority}
-              setValue={setSelectedPriority}
-              setItems={() => {}}
-              style={styles.dropdown}
-            />
+            {/* Sort Dropdown */}
+            <View style={styles.dropdownContainer}>
+              <Text style={styles.dropdownLabel}>SORT BY</Text>
+              <DropDownPicker
+                open={openSort}
+                value={selectedSort}
+                items={[
+                  { label: "None", value: "none" },
+                  { label: "Due Date", value: "dueDate" },
+                  { label: "Priority", value: "priority" },
+                ]}
+                setOpen={setOpenSort}
+                setValue={setSelectedSort}
+                setItems={() => {}}
+                style={[styles.dropdown, { zIndex: 99 }]}
+              />
+            </View>
 
             <View style={styles.buttonContainer}>
               <TouchableOpacity
@@ -311,95 +378,133 @@ const TaskList = ({ onDeleteCategory }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#f5f5f5",
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
-    marginVertical: 12,
-    marginHorizontal: 14,
+    marginBottom: 20,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    elevation: 3,
   },
   searchInput: {
     height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    borderRadius: 8,
     flex: 1,
-    marginRight: 8,
-    paddingHorizontal: 8,
+    fontFamily: "System",
+    fontSize: 16,
+    marginLeft: 10,
   },
   addButton: {
     position: "absolute",
-    bottom: 16,
-    right: 16,
-    backgroundColor: "blue",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    bottom: 20,
+    right: 20,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    elevation: 3,
   },
   addButtonText: {
     color: "white",
     fontWeight: "bold",
+    fontSize: 16,
+    fontFamily: "System",
+  },
+  noTasksText: {
+    textAlign: "center",
+    marginTop: 50,
+    fontSize: 18,
+    color: "#555",
   },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // semi-transparent background
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
     width: 300,
     padding: 20,
-    borderRadius: 8,
+    borderRadius: 10,
     elevation: 5,
     backgroundColor: "#fff",
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 15,
+    color: "#333",
+    fontFamily: "System",
   },
   dropdown: {
     height: 40,
-    backgroundColor: "#fafafa",
-    marginBottom: 10,
+    backgroundColor: "#ecf0f1",
+    borderWidth: 0,
   },
   buttonText: {
     color: "#fff",
+    fontSize: 16,
+    fontFamily: "System",
   },
   applyButton: {
-    marginTop: 16,
-    padding: 10,
-    backgroundColor: "blue",
-    borderRadius: 8,
+    marginTop: 20,
+    paddingHorizontal: 7,
+    paddingVertical: 12,
+    backgroundColor: "#3498db",
+    borderRadius: 10,
     alignItems: "center",
+    elevation: 3,
   },
   clearButton: {
-    marginTop: 16,
-    padding: 10,
-    backgroundColor: "red",
-    borderRadius: 8,
+    marginTop: 20,
+    paddingHorizontal: 7,
+    paddingVertical: 12,
+    backgroundColor: "#e74c3c",
+    borderRadius: 10,
     alignItems: "center",
+    elevation: 3,
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
   confirmButton: {
-    marginTop: 16,
-    padding: 10,
-    backgroundColor: "green",
-    borderRadius: 8,
+    marginTop: 20,
+    paddingHorizontal: 19,
+    paddingVertical: 12,
+    backgroundColor: "#27ae60",
+    borderRadius: 10,
     alignItems: "center",
+    elevation: 3,
   },
   cancelButton: {
-    marginTop: 16,
-    padding: 10,
-    backgroundColor: "red",
-    borderRadius: 8,
+    marginTop: 20,
+    paddingHorizontal: 19,
+    paddingVertical: 12,
+    backgroundColor: "#e74c3c",
+    borderRadius: 10,
     alignItems: "center",
+    elevation: 3,
   },
+  dropdownContainer: {
+    marginBottom: 15,
+    paddingVertical: 9,
+  },
+  dropdownLabel: {
+    fontSize: 13,
+    marginVertical: 10,
+    paddingHorizontal: 8,
+    color: "#555",
+  },
+  radioButtonContainer: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
+  radioButton: {},
 });
 
 export default TaskList;
