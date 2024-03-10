@@ -1,4 +1,3 @@
-// TaskListWithCheckbox.js
 import React from "react";
 import {
   FlatList,
@@ -9,6 +8,7 @@ import {
 } from "react-native";
 import Task from "./Task";
 
+// Functional component for rendering a list of tasks with checkboxes
 const TaskListWithCheckbox = ({ tasks, onToggle, onPress }) => {
   return (
     <FlatList
@@ -16,6 +16,7 @@ const TaskListWithCheckbox = ({ tasks, onToggle, onPress }) => {
       keyExtractor={(task) => task.id.toString()}
       renderItem={({ item }) => (
         <TouchableOpacity onPress={() => onPress(item)}>
+          {/* Render each task with a TouchableOpacity for interaction */}
           <Task task={item} onToggle={() => onToggle(item.id)} />
         </TouchableOpacity>
       )}

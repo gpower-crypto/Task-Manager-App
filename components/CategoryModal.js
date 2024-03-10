@@ -11,6 +11,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import WheelColorPicker from "react-native-wheel-color-picker";
 
+// CategoryModal component for handling category creation and editing
 const CategoryModal = ({
   visible,
   onClose,
@@ -18,22 +19,28 @@ const CategoryModal = ({
   categoryData,
   onUpdate,
 }) => {
+  // State to store the category name
   const [categoryName, setCategoryName] = useState(categoryData?.name || "");
+  // State to store the selected color for the category
   const [selectedColor, setSelectedColor] = useState(
     categoryData?.color || "#3498db"
   );
 
+  // useEffect to update states when categoryData prop changes
   useEffect(() => {
     setCategoryName(categoryData?.name || "");
     setSelectedColor(categoryData?.color || "#3498db");
   }, [categoryData]);
 
+  // Function to handle saving or updating a category
   const handleSave = async () => {
     // Check if category name is not blank
     if (!categoryName.trim()) {
       Alert.alert("Error", "Category name cannot be blank.");
       return;
     }
+
+    // Create a new category object
     const newCategory = {
       id: categoryData?.id || Date.now().toString(),
       name: categoryName,
@@ -43,8 +50,11 @@ const CategoryModal = ({
     try {
       let updatedCategories = [];
       const categoriesString = await AsyncStorage.getItem("categories");
+
       if (categoriesString) {
+        // If categories exist in AsyncStorage
         const storedCategories = JSON.parse(categoriesString);
+
         if (categoryData) {
           // Editing existing category
           const categoryIndex = storedCategories.findIndex(
@@ -61,18 +71,22 @@ const CategoryModal = ({
         updatedCategories = [newCategory];
       }
 
+      // Save the updated or new category to AsyncStorage
       await AsyncStorage.setItem(
         "categories",
         JSON.stringify(updatedCategories)
       );
-      !categoryData ? onSave() : onUpdate(newCategory); // Trigger the onSave callback to update the state in the parent component
-      onClose();
-      setCategoryName("");
+
+      // Trigger the onSave callback to update the state in the parent component
+      !categoryData ? onSave() : onUpdate(newCategory);
+      onClose(); // Close the modal
+      setCategoryName(""); // Clear the category name input
     } catch (error) {
       console.error("Error saving category to AsyncStorage:", error);
     }
   };
 
+  // Render the CategoryModal component
   return (
     <Modal
       animationType="slide"
@@ -97,6 +111,7 @@ const CategoryModal = ({
             initialColor={selectedColor}
             style={styles.colorPicker}
           />
+
           <TouchableOpacity style={styles.addButtonModal} onPress={handleSave}>
             <Text style={styles.buttonText}>
               {categoryData ? "Save Changes" : "Add List"}
@@ -108,6 +123,7 @@ const CategoryModal = ({
   );
 };
 
+// Styles for the CategoryModal component
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,

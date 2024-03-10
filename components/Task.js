@@ -1,9 +1,10 @@
-// Task.js
 import React from "react";
 import { List, Checkbox } from "react-native-paper";
 import { StyleSheet, View, Text } from "react-native";
 
+// Task component for displaying individual tasks
 const Task = ({ task, onToggle, onPress }) => {
+  // Render the Task component
   return (
     <List.Item
       style={styles.taskItem}
@@ -27,13 +28,14 @@ const Task = ({ task, onToggle, onPress }) => {
         <Checkbox
           status={task.completed ? "checked" : "unchecked"}
           onPress={() => onToggle(task.id)}
-          color="#3498db" // Checkbox color
+          color="#3498db"
         />
       )}
     />
   );
 };
 
+// Priority colors for styling tasks
 const priorityColors = {
   high: "#e74c3c",
   medium: "#f39c12",
@@ -41,6 +43,7 @@ const priorityColors = {
   none: "#95a5a6",
 };
 
+// Styles for the Task component
 const styles = StyleSheet.create({
   taskItem: {
     flexDirection: "row",
@@ -67,7 +70,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginRight: 10,
-    color: "#333", // Text color
+    color: "#333",
   },
   taskPriority: {
     fontSize: 12,
@@ -75,7 +78,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 8,
-    color: "#fff", // Text color
+    color: "#fff",
   },
 });
 

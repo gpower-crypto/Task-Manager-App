@@ -1,9 +1,10 @@
-// NavbarMenu.js
 import React, { useState } from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { EvilIcons } from "@expo/vector-icons";
 import CategoryModal from "./CategoryModal";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+// NavbarMenu component for displaying menu options
 const NavbarMenu = ({
   onOpenDeleteConfirmation,
   category,
@@ -12,29 +13,36 @@ const NavbarMenu = ({
   homeScreen,
   handleShareList,
 }) => {
+  // State variables for handling menu visibility and edit modal visibility
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
+  // Function to toggle menu visibility
   const toggleMenu = () => {
     setShowMenu(!showMenu);
   };
 
+  // Function to toggle edit modal visibility
   const toggleEditModal = () => {
     setShowEditModal(!showEditModal);
   };
 
+  // Function to handle category deletion
   const handleDeleteCategory = () => {
     toggleMenu();
     onOpenDeleteConfirmation();
   };
 
+  // Function to handle category editing
   const handleEditCategory = () => {
     toggleMenu();
     toggleEditModal();
   };
 
+  // Render the NavbarMenu component
   return (
     <View style={styles.container}>
+      {/* Menu icon */}
       <TouchableOpacity onPress={toggleMenu} style={styles.menuIcon}>
         <EvilIcons
           name={showMenu ? "close" : "navicon"}
@@ -43,10 +51,12 @@ const NavbarMenu = ({
         />
       </TouchableOpacity>
 
+      {/* Display the menu options */}
       {showMenu && (
         <View style={styles.menu}>
           {!homeScreen ? (
             <>
+              {/* Delete List option */}
               <TouchableOpacity
                 onPress={handleDeleteCategory}
                 style={styles.menuItem}
@@ -56,6 +66,8 @@ const NavbarMenu = ({
                   Delete List
                 </Text>
               </TouchableOpacity>
+
+              {/* Edit List option */}
               <TouchableOpacity
                 onPress={handleEditCategory}
                 style={styles.menuItem}
@@ -65,6 +77,8 @@ const NavbarMenu = ({
                   Edit List
                 </Text>
               </TouchableOpacity>
+
+              {/* Share option */}
               <TouchableOpacity
                 onPress={handleShareList}
                 style={styles.menuItem}
@@ -77,6 +91,7 @@ const NavbarMenu = ({
             </>
           ) : (
             <>
+              {/* View Calendar option */}
               <TouchableOpacity
                 onPress={() => navigation.navigate("Calendar")}
                 style={styles.menuItem}
@@ -86,6 +101,8 @@ const NavbarMenu = ({
                   View Calendar
                 </Text>
               </TouchableOpacity>
+
+              {/* Dashboard option */}
               <TouchableOpacity
                 onPress={() => navigation.navigate("Dashboard")}
                 style={styles.menuItem}
@@ -95,11 +112,27 @@ const NavbarMenu = ({
                   Dashboard
                 </Text>
               </TouchableOpacity>
+
+              {/* Weather option */}
+              <TouchableOpacity
+                onPress={() => navigation.navigate("Weather")}
+                style={styles.menuItem}
+              >
+                <MaterialCommunityIcons
+                  name="weather-cloudy"
+                  size={24}
+                  color="#3498db"
+                />
+                <Text style={[styles.menuItemText, { color: "black" }]}>
+                  Weather
+                </Text>
+              </TouchableOpacity>
             </>
           )}
         </View>
       )}
 
+      {/* Category edit modal */}
       <CategoryModal
         visible={showEditModal}
         onClose={toggleEditModal}
@@ -112,6 +145,7 @@ const NavbarMenu = ({
   );
 };
 
+// Styles for the NavbarMenu component
 const styles = StyleSheet.create({
   container: {
     position: "absolute",

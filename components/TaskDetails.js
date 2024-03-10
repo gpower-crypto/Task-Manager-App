@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import * as Notifications from "expo-notifications";
 
+// TaskDetails component for displaying task details
 const TaskDetails = ({ route, navigation }) => {
   const { item, categoryId, backgroundColor, textColor } = route.params;
   const { id, title, description, dueDate, completed, priority, image } = item;
@@ -23,14 +24,17 @@ const TaskDetails = ({ route, navigation }) => {
   const [reminderDate, setReminderDate] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  // Show date picker modal
   const showDatepicker = () => {
     setShowDatePicker(true);
   };
 
+  // Hide date picker modal
   const hideDatePicker = () => {
     setShowDatePicker(false);
   };
 
+  // Handle date change in date picker
   const handleDateChange = (selectedDate) => {
     const parsedDate = new Date(selectedDate);
 
@@ -38,10 +42,12 @@ const TaskDetails = ({ route, navigation }) => {
     hideDatePicker();
   };
 
+  // Set reminder when reminder date changes
   useEffect(() => {
     setReminder();
   }, [reminderDate]);
 
+  // Set reminder using Expo Notifications
   const setReminder = async () => {
     if (reminderDate) {
       const identifier = await Notifications.scheduleNotificationAsync({
@@ -61,10 +67,12 @@ const TaskDetails = ({ route, navigation }) => {
     }
   };
 
+  // Update screen navigation bar
   useEffect(() => {
     updateScreenNavbar();
   }, []);
 
+  // Update screen navigation bar options
   const updateScreenNavbar = () => {
     navigation.setOptions({
       title: "Task Details",
@@ -77,6 +85,7 @@ const TaskDetails = ({ route, navigation }) => {
     });
   };
 
+  // Handle task deletion
   const handleDeleteTask = async () => {
     try {
       const tasksString = await AsyncStorage.getItem("tasks");
@@ -89,6 +98,7 @@ const TaskDetails = ({ route, navigation }) => {
     }
   };
 
+  // Handle task editing
   const handleEditTask = () => {
     navigation.navigate("Add Task", {
       taskToEdit: {
@@ -104,11 +114,13 @@ const TaskDetails = ({ route, navigation }) => {
     });
   };
 
+  // Handle image click for displaying full-size image
   const handleImageClick = (selectedImage) => {
     setSelectedImage(selectedImage);
     setModalVisible(true);
   };
 
+  // Render the TaskDetails component
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
@@ -213,6 +225,7 @@ const TaskDetails = ({ route, navigation }) => {
   );
 };
 
+// Styles for the TaskDetails component
 const styles = StyleSheet.create({
   container: {
     flex: 1,

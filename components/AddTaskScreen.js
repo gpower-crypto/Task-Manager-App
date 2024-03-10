@@ -6,14 +6,15 @@ import {
   StyleSheet,
   Text,
   Image,
-  FlatList,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import * as ImagePicker from "expo-image-picker"; // Import Expo Image Picker
+import * as ImagePicker from "expo-image-picker";
 
+// Functional component for AddTaskScreen
 const AddTaskScreen = () => {
+  // State variables for task details
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
   const [dueDate, setDueDate] = useState(new Date());
@@ -21,11 +22,13 @@ const AddTaskScreen = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
 
+  // Navigation and route hooks
   const navigation = useNavigation();
   const route = useRoute();
   const { taskToEdit } = route.params || {};
   const { name, id, color, textColor } = route.params?.category || {};
 
+  // useEffect to populate state when editing a task
   useEffect(() => {
     if (taskToEdit) {
       const {
@@ -43,6 +46,7 @@ const AddTaskScreen = () => {
     }
   }, [taskToEdit]);
 
+  // Function to handle task addition or update in AsyncStorage
   const onAddTask = async (newTask) => {
     try {
       const existingTasksString = await AsyncStorage.getItem("tasks");
@@ -51,12 +55,14 @@ const AddTaskScreen = () => {
         : [];
 
       if (taskToEdit) {
+        // Update existing task
         const updatedTasks = existingTasks.map((task) =>
           task.id === taskToEdit.id ? newTask : task
         );
         await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
         console.log("Task updated in AsyncStorage:", newTask);
       } else {
+        // Add new task
         const updatedTasks = [...existingTasks, newTask];
         await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
         console.log("Task added to AsyncStorage:", newTask);
@@ -66,6 +72,7 @@ const AddTaskScreen = () => {
     }
   };
 
+  // Function to pick images from device
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -85,26 +92,31 @@ const AddTaskScreen = () => {
     }
   };
 
+  // useEffect to update screen navbar
   useEffect(() => {
     updateScreenNavbar();
   });
 
+  // Function to handle date change in DateTimePicker
   const onChange = (event, selectedDate) => {
     const currentDate = selectedDate || dueDate;
     setShowDatePicker(false);
     setDueDate(currentDate);
   };
 
+  // Function to show DateTimePicker modal
   const showDatePickerModal = () => {
     setShowDatePicker(true);
   };
 
+  // Function to add or update a task
   const addTask = () => {
     if (taskTitle.trim() === "") {
       alert("Please enter a task title");
       return;
     }
 
+    // Create a new task object
     const newTask = {
       id: taskToEdit?.id || Date.now().toString(),
       title: taskTitle,
@@ -112,15 +124,19 @@ const AddTaskScreen = () => {
       dueDate: dueDate.toISOString(),
       completed: taskToEdit?.completed || false,
       priority,
-      category: name,
+      categoryId: id,
+      categoryName: name,
       image: selectedImages.map((image) => image.uri),
     };
 
+    // Call onAddTask to handle AsyncStorage update
     onAddTask(newTask);
 
+    // Navigate back to TaskList with category information
     navigation.navigate("TaskList", { category: route.params?.category });
   };
 
+  // Function to update screen navbar based on category colors
   const updateScreenNavbar = () => {
     navigation.setOptions({
       title: taskToEdit && "Edit Task",
@@ -131,6 +147,7 @@ const AddTaskScreen = () => {
     });
   };
 
+  // Function to render selected images
   const renderSelectedImages = () => {
     return selectedImages.map((image, index) => (
       <Image
@@ -143,24 +160,29 @@ const AddTaskScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Input for Task Title */}
       <TextInput
         style={styles.input}
         placeholder="Task Title"
         value={taskTitle}
         onChangeText={(text) => setTaskTitle(text)}
       />
+      {/* Input for Task Description */}
       <TextInput
         style={styles.input}
         placeholder="Task Description"
         value={taskDescription}
         onChangeText={(text) => setTaskDescription(text)}
       />
+      {/* Button to pick images */}
       <TouchableOpacity onPress={pickImage} style={styles.imagePickerButton}>
         <Text style={styles.imagePickerButtonText}>Add Image</Text>
       </TouchableOpacity>
 
+      {/* Render selected images */}
       {renderSelectedImages()}
 
+      {/* Button to show DatePicker */}
       <TouchableOpacity
         onPress={showDatePickerModal}
         style={styles.datePickerButton}
@@ -169,6 +191,8 @@ const AddTaskScreen = () => {
           style={styles.datePickerButtonText}
         >{`Due Date: ${dueDate.toDateString()}`}</Text>
       </TouchableOpacity>
+
+      {/* Render DatePicker modal if showDatePicker is true */}
       {showDatePicker && (
         <DateTimePicker
           testID="dateTimePicker"
@@ -179,9 +203,12 @@ const AddTaskScreen = () => {
           onChange={onChange}
         />
       )}
+
+      {/* Priority selection section */}
       <View style={styles.priorityContainer}>
         <Text style={styles.priorityLabel}>Priority:</Text>
         <View style={styles.radioGroup}>
+          {/* Priority buttons */}
           <TouchableOpacity
             onPress={() => setPriority("high")}
             style={[
@@ -222,6 +249,8 @@ const AddTaskScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Button to add or update a task */}
       <TouchableOpacity
         onPress={addTask}
         style={[
@@ -247,6 +276,7 @@ const AddTaskScreen = () => {
   );
 };
 
+// Styles for AddTaskScreen component
 const styles = StyleSheet.create({
   container: {
     flex: 1,

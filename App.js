@@ -1,4 +1,3 @@
-// App.js
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -8,9 +7,12 @@ import AddTaskScreen from "./components/AddTaskScreen";
 import TaskList from "./components/TaskList";
 import CalendarIntegration from "./components/CalendarIntegration";
 import Dashboard from "./components/Dashboard";
+import WeatherPage from "./components/WeatherPage";
 
+// Create stack navigator
 const Stack = createStackNavigator();
 
+// App functional component
 const App = () => {
   return (
     <NavigationContainer>
@@ -21,6 +23,7 @@ const App = () => {
         <Stack.Screen name="Add Task" component={AddTaskScreen} />
         <Stack.Screen name="Calendar" component={CalendarIntegration} />
         <Stack.Screen name="Dashboard" component={Dashboard} />
+        <Stack.Screen name="Weather" component={WeatherPage} />
       </Stack.Navigator>
     </NavigationContainer>
   );

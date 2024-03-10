@@ -6,17 +6,21 @@ import {
   VictoryChart,
   VictoryAxis,
   VictoryLine,
-  VictoryGroup,
+  VictoryLabel,
 } from "victory-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+// Dashboard component for displaying task completion and statistics
 const Dashboard = () => {
+  // State to store the tasks
   const [tasks, setTasks] = useState([]);
 
+  // useEffect to fetch tasks on component mount or when tasks state changes
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [tasks]);
 
+  // Function to fetch tasks from AsyncStorage
   const fetchTasks = async () => {
     try {
       const tasksString = await AsyncStorage.getItem("tasks");
@@ -27,37 +31,54 @@ const Dashboard = () => {
     }
   };
 
+  // Function to calculate the completion percentage of tasks
   const completionPercentage = () => {
     const completedTasks = tasks.filter((task) => task.completed);
     return (completedTasks.length / tasks.length) * 100 || 0;
   };
 
+  // Function to group tasks by categories for charting
   const groupTasksByCategories = () => {
-    const tasksByCategory = tasks.reduce((acc, task) => {
-      const category = task.category || "Uncategorized";
+    const uniqueCategoryIds = [
+      ...new Set(tasks.map((task) => task.categoryId)),
+    ];
+    const tasksByCategory = uniqueCategoryIds.reduce((acc, categoryId) => {
+      const categoryTasks = tasks.filter(
+        (task) => task.categoryId === categoryId
+      );
+      const categoryName =
+        categoryTasks.length > 0
+          ? categoryTasks[0].categoryName
+          : "Uncategorized";
+      acc[categoryName] = (acc[categoryName] || 0) + 1;
+      return acc;
+    }, {});
+
+    const tasksByEachCategory = tasks.reduce((acc, task) => {
+      const category = task.categoryName || "Uncategorized";
       acc[category] = (acc[category] || 0) + 1;
       return acc;
     }, {});
-    return Object.entries(tasksByCategory).map(([category, count]) => ({
-      x: category,
-      y: count,
-    }));
+
+    const totalCount = Object.values(tasksByCategory).reduce(
+      (total, count) => total + count,
+      0
+    );
+
+    const categoryData = Object.entries(tasksByEachCategory).map(
+      ([category, count]) => ({
+        x: category,
+        y: count,
+      })
+    );
+
+    return { totalCount, categoryData };
   };
 
-  const groupTasksByStatus = () => {
-    const tasksByStatus = tasks.reduce((acc, task) => {
-      const status = task.completed ? "Completed" : "Incomplete";
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, {});
-    return Object.entries(tasksByStatus).map(([status, count]) => ({
-      x: status,
-      y: count,
-    }));
-  };
-
+  // Render the Dashboard component
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* Task Completion Chart */}
       <Text style={styles.heading}>Task Completion</Text>
       <View style={styles.chartContainer}>
         <VictoryPie
@@ -74,10 +95,11 @@ const Dashboard = () => {
             parent: { marginLeft: -18 },
             labels: { fill: "#333", fontSize: 18, fontWeight: "bold" },
           }}
-          labels={({ datum }) => `${datum.x}\n${datum.y}%`} // Display rounded percentage below the label
+          labels={({ datum }) => `${datum.x}\n${datum.y}%`}
         />
       </View>
 
+      {/* Tasks by Category Chart */}
       <Text style={styles.heading}>Tasks by Category</Text>
       {tasks.length > 0 && (
         <ScrollView
@@ -86,11 +108,14 @@ const Dashboard = () => {
         >
           <View style={styles.chartContainer}>
             <VictoryChart
-              domainPadding={{ x: 30 }} // Adjust the x value to increase spacing between categories
-              width={tasks.length * 75} // Adjust as needed based on the number of categories
+              domainPadding={{ x: 30 }}
+              width={
+                groupTasksByCategories().totalCount *
+                (groupTasksByCategories().totalCount === 1 ? 220 : 120)
+              }
             >
               <VictoryAxis
-                tickValues={groupTasksByCategories().map(
+                tickValues={groupTasksByCategories().categoryData.map(
                   (dataPoint) => dataPoint.x
                 )}
                 style={{
@@ -100,36 +125,25 @@ const Dashboard = () => {
                 }}
               />
               <VictoryBar
-                data={groupTasksByCategories()}
+                data={groupTasksByCategories().categoryData}
                 style={{ data: { width: 15, fill: "#5bc0de" } }}
+                labels={({ datum }) =>
+                  `${datum.y} ${datum.y === 1 ? "task" : "tasks"}`
+                }
+                labelComponent={<VictoryLabel dy={-15} />}
               />
             </VictoryChart>
           </View>
         </ScrollView>
       )}
 
-      <Text style={styles.heading}>Tasks by Status</Text>
-      <View style={styles.chartContainer}>
-        <VictoryPie
-          data={groupTasksByStatus()}
-          colorScale={["#5bc0de", "#d9534f"]}
-          height={200}
-          padding={40}
-          innerRadius={50}
-          labelRadius={70}
-          style={{
-            parent: { marginLeft: -18 },
-            labels: { fill: "#333", fontSize: 18, fontWeight: "bold" },
-          }}
-        />
-      </View>
-
+      {/* Task Distribution Over Time Chart */}
       <Text style={styles.heading}>Task Distribution Over Time</Text>
       {tasks.length > 0 && (
         <View style={styles.chartContainer}>
           <ScrollView horizontal={true}>
             <VictoryChart
-              width={tasks.length * 120} // Adjust as needed based on the number of tasks
+              width={tasks.length * 320} // Adjust as needed based on the number of tasks
             >
               <VictoryAxis
                 tickFormat={(t) =>
@@ -146,7 +160,7 @@ const Dashboard = () => {
               />
               <VictoryLine
                 data={tasks.map((task) => ({
-                  x: new Date(task.dueDate), // Assuming each task has a 'date' property
+                  x: new Date(task.dueDate),
                   y: 1,
                 }))}
                 style={{ data: { stroke: "#5bc0de", strokeWidth: 2 } }}
@@ -158,12 +172,11 @@ const Dashboard = () => {
           </ScrollView>
         </View>
       )}
-
-      {/* Add more charts and statistics based on your requirements */}
     </ScrollView>
   );
 };
 
+// Styles for the Dashboard component
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,

@@ -20,10 +20,14 @@ import { RadioButton } from "react-native-paper";
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system";
 
+// TaskList component for displaying the list of tasks
 const TaskList = ({ onDeleteCategory }) => {
+  // Initializing navigation and route
   const navigation = useNavigation();
   const route = useRoute();
 
+  // State variables for managing tasks, search query, selected status, filter modal visibility, category to delete,
+  // selected sort, sort dropdown state, filtered tasks, and delete confirmation visibility
   const [tasks, setTasks] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -34,26 +38,33 @@ const TaskList = ({ onDeleteCategory }) => {
   const [filteredTasks, setFilteredTasks] = useState(tasks);
   const { name, id, color } = route.params?.category;
 
+  // State variable for delete confirmation modal visibility
   const [isDeleteConfirmationVisible, setDeleteConfirmationVisible] =
     useState(false);
 
+  // Function to check if a color is light or dark
   const isLightColor = (hexColor) => {
     const colorInstance = Color(hexColor);
     const luminance = colorInstance.luminosity();
     return luminance > 0.5; // Adjust this threshold as needed
   };
+
+  // State variable for text color based on background color
   const [textColor, setTextColor] = useState(
     isLightColor(color) ? "black" : "white"
   );
 
+  // Function to open delete confirmation modal
   const openDeleteConfirmation = () => {
     setDeleteConfirmationVisible(true);
   };
 
+  // Function to close delete confirmation modal
   const closeDeleteConfirmation = () => {
     setDeleteConfirmationVisible(false);
   };
 
+  // Function to create a temporary file for sharing tasks
   const createTempFile = async () => {
     const tasksText = tasks
       .map(
@@ -71,6 +82,7 @@ const TaskList = ({ onDeleteCategory }) => {
     return tempFileUri;
   };
 
+  // Function to share tasks using Expo Sharing
   const shareTasks = async () => {
     try {
       const tempFileUri = await createTempFile();
@@ -84,6 +96,7 @@ const TaskList = ({ onDeleteCategory }) => {
     }
   };
 
+  // Function to navigate to the Add Task screen
   const navigateToAddTask = () => {
     navigation.navigate("Add Task", {
       category: {
@@ -95,6 +108,7 @@ const TaskList = ({ onDeleteCategory }) => {
     });
   };
 
+  // Function to confirm deletion of a category
   const confirmDeleteCategory = async () => {
     try {
       console.log(`Deleting category ${name} and its tasks...`);
@@ -105,7 +119,7 @@ const TaskList = ({ onDeleteCategory }) => {
         : [];
 
       const updatedTasks = existingTasks.filter(
-        (task) => task.category !== name
+        (task) => task.categoryId !== id
       );
 
       await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
@@ -132,6 +146,7 @@ const TaskList = ({ onDeleteCategory }) => {
     }
   };
 
+  // Function to fetch tasks from AsyncStorage
   const fetchTasks = async () => {
     try {
       const tasksString = await AsyncStorage.getItem("tasks");
@@ -139,7 +154,7 @@ const TaskList = ({ onDeleteCategory }) => {
 
       // Filter tasks based on the specified category name
       const filteredTasks = name
-        ? storedTasks.filter((task) => task.category === name)
+        ? storedTasks.filter((task) => task.categoryId === id)
         : storedTasks;
 
       setTasks(filteredTasks);
@@ -148,17 +163,19 @@ const TaskList = ({ onDeleteCategory }) => {
     }
   };
 
+  // useEffect to fetch tasks and update screen navigation bar
   useEffect(() => {
     fetchTasks();
     updateScreenNavbar();
     setTextColor(isLightColor(color) ? "black" : "white");
   }, [tasks, name]);
 
+  // Function to update screen navigation bar options
   const updateScreenNavbar = () => {
     navigation.setOptions({
       title: name || "Task Categories",
       headerStyle: {
-        backgroundColor: color, // Updated header color
+        backgroundColor: color,
       },
       headerTintColor: textColor,
       headerRight: () => (
@@ -174,14 +191,17 @@ const TaskList = ({ onDeleteCategory }) => {
     });
   };
 
+  // Function to open filter modal
   const openFilterModal = () => {
     setFilterModalVisible(true);
   };
 
+  // Function to close filter modal
   const closeFilterModal = () => {
     setFilterModalVisible(false);
   };
 
+  // Function to apply filter and sort
   const applyFilter = () => {
     // Filtering logic based on selectedStatus
     const filteredTasksByStatus = tasks.filter((task) => {
@@ -219,6 +239,7 @@ const TaskList = ({ onDeleteCategory }) => {
     closeFilterModal();
   };
 
+  // Function to handle toggling task completion status
   const handleToggleComplete = (taskId) => {
     const updatedTasks = tasks.map((task) =>
       task.id === taskId ? { ...task, completed: !task.completed } : task
@@ -227,6 +248,7 @@ const TaskList = ({ onDeleteCategory }) => {
     updateTasks(updatedTasks);
   };
 
+  // Function to update tasks in AsyncStorage
   const updateTasks = async (updatedTasks) => {
     try {
       await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
@@ -236,6 +258,7 @@ const TaskList = ({ onDeleteCategory }) => {
     }
   };
 
+  // Function to navigate to task details screen
   const navigateToDetails = (item) => {
     navigation.navigate("TaskDetails", {
       item,
@@ -245,6 +268,7 @@ const TaskList = ({ onDeleteCategory }) => {
     });
   };
 
+  // Function to clear filters
   const clearFilters = () => {
     setSelectedStatus("all");
     setSelectedSort("all");
@@ -252,6 +276,7 @@ const TaskList = ({ onDeleteCategory }) => {
     closeFilterModal();
   };
 
+  // Render the TaskList component
   return (
     <View style={styles.container}>
       <View style={[styles.header, { backgroundColor: color }]}>
@@ -401,6 +426,7 @@ const TaskList = ({ onDeleteCategory }) => {
   );
 };
 
+// Styles for the TaskList component
 const styles = StyleSheet.create({
   container: {
     flex: 1,

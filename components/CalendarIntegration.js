@@ -4,13 +4,17 @@ import { Calendar as RNCalendar } from "react-native-calendars";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ExpoCalendar from "expo-calendar";
 
+// CalendarIntegration component for handling calendar-related functionality
 const CalendarIntegration = ({ navigation }) => {
+  // State to store tasks fetched from AsyncStorage
   const [tasks, setTasks] = useState([]);
 
+  // Fetch tasks from AsyncStorage when component mounts
   useEffect(() => {
     fetchTasks();
   }, []);
 
+  // Function to fetch tasks from AsyncStorage
   const fetchTasks = async () => {
     try {
       const tasksString = await AsyncStorage.getItem("tasks");
@@ -21,6 +25,7 @@ const CalendarIntegration = ({ navigation }) => {
     }
   };
 
+  // Function to mark due dates on the calendar
   const markDueDatesOnCalendar = () => {
     const markedDates = {};
 
@@ -34,6 +39,7 @@ const CalendarIntegration = ({ navigation }) => {
     return markedDates;
   };
 
+  // Function to create a task in the device calendar
   const createTaskInCalendar = async (task) => {
     // Check if the calendar has been created
     const calendars = await ExpoCalendar.getCalendarsAsync();
@@ -72,8 +78,8 @@ const CalendarIntegration = ({ navigation }) => {
     console.log(`Event created: ${eventId}`);
   };
 
+  // Function to handle day press event on the calendar
   const handleDayPress = (day) => {
-    // Handle day press event
     // Fetch and display tasks for the selected day
     const selectedDate = day.dateString;
 
@@ -97,6 +103,7 @@ const CalendarIntegration = ({ navigation }) => {
     }
   };
 
+  // Render the CalendarIntegration component
   return (
     <View style={styles.container}>
       <RNCalendar
@@ -113,23 +120,11 @@ const CalendarIntegration = ({ navigation }) => {
           textDayFontWeight: "bold",
         }}
       />
-      <TouchableOpacity
-        onPress={() =>
-          navigation.navigate("Add Task", {
-            category: {
-              color: "#38419D",
-              textColor: "#fff",
-            },
-          })
-        }
-        style={styles.addTaskButton}
-      >
-        <Text style={styles.addTaskButtonText}>Add Task</Text>
-      </TouchableOpacity>
     </View>
   );
 };
 
+// Styles for the CalendarIntegration component
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -1,20 +1,21 @@
-// Home.js
 import React, { useEffect } from "react";
-import { TouchableOpacity } from "react-native";
 import { PaperProvider, DefaultTheme } from "react-native-paper";
 import TaskCategories from "./TaskCategories";
 import { Ionicons } from "@expo/vector-icons";
 import NavbarMenu from "./NavbarMenu";
 
+// Home component for displaying task categories
 const Home = ({ navigation }) => {
+  // useEffect to update the screen's navigation bar
   useEffect(() => {
     updateScreenNavbar();
   });
 
+  // Function to update the screen's navigation bar
   const updateScreenNavbar = () => {
     navigation.setOptions({
       headerStyle: {
-        backgroundColor: "#38419D", // Updated header color
+        backgroundColor: "#38419D",
       },
       headerTintColor: "white",
       headerLeft: () => (
@@ -34,6 +35,8 @@ const Home = ({ navigation }) => {
       ),
     });
   };
+
+  // Render the Home component
   return (
     <PaperProvider theme={DefaultTheme}>
       <TaskCategories />

@@ -1,16 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import CategoryModal from "./CategoryModal";
+import ProgressBar from "./ProgressBar";
 
+// TaskCategories component for displaying task categories
 const TaskCategories = () => {
   const navigation = useNavigation();
   const [categories, setCategories] = useState([]);
   const [addCategoryModalVisible, setAddCategoryModalVisible] = useState(false);
   const [editCategoryData, setEditCategoryData] = useState(null);
 
+  // Fetch categories from AsyncStorage
   const fetchCategories = async () => {
     try {
       const categoriesString = await AsyncStorage.getItem("categories");
@@ -25,10 +34,13 @@ const TaskCategories = () => {
           const storedTasks = tasksString ? JSON.parse(tasksString) : [];
 
           const categoryTasks = storedTasks.filter(
-            (task) => task.category === category.name
+            (task) => task.categoryId === category.id
           );
 
           category.tasks = categoryTasks.length;
+          category.tasksCompleted = categoryTasks.filter(
+            (task) => task.completed
+          ).length;
           return category;
         })
       );
@@ -39,62 +51,71 @@ const TaskCategories = () => {
     }
   };
 
+  // Fetch categories on initial render
   useEffect(() => {
     fetchCategories();
-  }, []); // Fetch categories on initial render
+  }, []);
 
+  // Fetch categories whenever the screen is focused
   useFocusEffect(
     React.useCallback(() => {
-      fetchCategories(); // Fetch categories whenever the screen is focused
+      fetchCategories();
     }, [])
   );
 
+  // Handle callback after saving or editing a category
   const handleSaveCategory = () => {
-    fetchCategories(); // Fetch categories after saving or editing a category
+    fetchCategories();
   };
 
+  // Handle adding a new category
   const handleAddCategory = () => {
     setEditCategoryData(null);
     setAddCategoryModalVisible(true);
   };
 
+  // Render the TaskCategories component
   return (
     <View style={styles.container}>
       <Text style={styles.headerText}>Tasks</Text>
-
-      {categories.map((category) => (
-        <TouchableOpacity
-          key={category.id}
-          style={[styles.categoryItem, { borderColor: category.color }]}
-          onPress={() => navigation.navigate("TaskList", { category })}
-        >
-          <View style={styles.categoryInfo}>
-            <View style={styles.categoryHeader}>
-              <Text style={styles.categoryName}>{category.name}</Text>
-              <FontAwesome
-                name="smile-o"
-                size={20}
-                color={category.color}
-                style={styles.colorIcon}
-              />
-            </View>
-            <Text style={styles.categoryTaskCount}>
-              {category.tasks ? `${category.tasks} tasks` : "No tasks"}
-            </Text>
-          </View>
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color="#555"
+      <ScrollView>
+        {categories.map((category) => (
+          <TouchableOpacity
+            key={category.id}
+            style={[styles.categoryItem, { borderColor: category.color }]}
             onPress={() => navigation.navigate("TaskList", { category })}
-          />
+          >
+            <View style={styles.categoryInfo}>
+              <View style={styles.categoryHeader}>
+                <Text style={styles.categoryName}>{category.name}</Text>
+                <FontAwesome
+                  name="smile-o"
+                  size={20}
+                  color={category.color}
+                  style={styles.colorIcon}
+                />
+              </View>
+              <Text style={styles.categoryTaskCount}>
+                {category.tasks ? `${category.tasks} tasks` : "No tasks"}
+              </Text>
+            </View>
+            <ProgressBar // Use ProgressBar component
+              percentage={(category?.tasksCompleted / category?.tasks) * 100} // Calculate percentage based on completed tasks
+              color={category.color}
+            />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color="#555"
+              onPress={() => navigation.navigate("TaskList", { category })}
+            />
+          </TouchableOpacity>
+        ))}
+
+        <TouchableOpacity style={styles.addButton} onPress={handleAddCategory}>
+          <Ionicons name="add" size={30} color="#fff" />
         </TouchableOpacity>
-      ))}
-
-      <TouchableOpacity style={styles.addButton} onPress={handleAddCategory}>
-        <Ionicons name="add" size={30} color="#fff" />
-      </TouchableOpacity>
-
+      </ScrollView>
       {/* Add Category Modal */}
       <CategoryModal
         visible={addCategoryModalVisible}
@@ -105,6 +126,7 @@ const TaskCategories = () => {
   );
 };
 
+// Styles for the TaskCategories component
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -198,6 +220,15 @@ const styles = StyleSheet.create({
   },
   colorIcon: {
     marginLeft: 8,
+  },
+  progressBarContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  progressBar: {
+    height: 10,
+    borderRadius: 5,
+    marginVertical: 8,
   },
 });
 
