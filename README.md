@@ -1,5 +1,7 @@
 # Task Manager App
 
+You can watch a demo of the app [here](https://youtu.be/sBEoznp_zHE?feature=shared).
+
 ## Overview
 
 The Task Manager App is a mobile application designed to help users efficiently organize and manage their tasks. Built using React Native, the app provides a user-friendly interface for creating, editing, and tracking tasks across different categories. Key features include task filtering, sorting, category management, and integration with third-party APIs for weather information.
